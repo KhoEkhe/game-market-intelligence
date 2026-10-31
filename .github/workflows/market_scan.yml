@@ -1,0 +1,37 @@
+name: Game Market Scanner
+
+on:
+  schedule:
+    # Mon + Thu 8:30 AM ICT = 01:30 UTC
+    - cron: "30 1 * * 1,4"
+  workflow_dispatch:  # allow manual run from GitHub UI
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # needed to commit results
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install gplay-scraper requests
+
+      - name: Run market scanner
+        run: python market_scanner.py
+
+      - name: Commit scan results
+        run: |
+          git config user.name "market-scanner[bot]"
+          git config user.email "market-scanner[bot]@users.noreply.github.com"
+          git add data/
+          git diff --staged --quiet || git commit -m "scan: $(date -u +%Y-%m-%d) market scan results"
+          git push
